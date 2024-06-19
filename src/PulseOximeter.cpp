@@ -24,6 +24,7 @@ void PulseOximeter::reset()
   sampleCount = 0;
   ratesCount = 0;
   lastHeartRate = 0;
+  isFull = false;
 }
 
 bool PulseOximeter::isFingerDetected()
@@ -37,27 +38,31 @@ void PulseOximeter::update()
   irValues[sampleCount] = particleSensor.getIR();
   sampleCount++;
   if (sampleCount >= numSamples)
+  {
     sampleCount = 0;
+    isFull = true;
+  }
 }
 
 bool PulseOximeter::hasNewValue()
 {
-  return sampleCount == 0;
+  return sampleCount % 5 == 0;
 }
 
 float PulseOximeter::getSpO2()
 {
   int32_t totalRed = 0;
   int32_t totalIR = 0;
+  int n = isFull ? numSamples : sampleCount;
 
-  for (int i = 0; i < numSamples; i++)
+  for (int i = 0; i < n; i++)
   {
     totalRed += redValues[i];
     totalIR += irValues[i];
   }
 
-  int32_t avgRed = totalRed / numSamples;
-  int32_t avgIR = totalIR / numSamples;
+  int32_t avgRed = totalRed / n;
+  int32_t avgIR = totalIR / n;
 
   return calculateSpO2(avgRed, avgIR);
 }
@@ -87,7 +92,7 @@ float PulseOximeter::calculateSpO2(int32_t redValue, int32_t irValue)
   float ratio = (float)redValue / (float)irValue;
 
   // 3. Estimate SpO2 using an empirical formula
-  float spo2 = 100.0f - 5.0f * (ratio - 0.8f);
+  float spo2 = 100.0f - 5.0f * (ratio - 0.75f);
 
   // 4. Constrain SpO2 to the range of 0% to 100%
   if (spo2 > 100.0f)
@@ -108,8 +113,9 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   int peakCount = 0;
   int lastPeakIndex = -1;
   int sumIntervals = 0;
+  int n = isFull ? numSamples : sampleCount;
 
-  for (int i = 1; i < numSamples - 1; i++)
+  for (int i = 1; i < n - 1; i++)
   {
     if (irValues[i] > irValues[i - 1] && irValues[i] > irValues[i + 1])
     {

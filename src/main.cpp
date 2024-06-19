@@ -2,7 +2,7 @@
 #include "BLEHandler.h"
 #include "PulseOximeter.h"
 
-#define DEBUG_LEVEL 1
+#define DEBUG_LEVEL 0
 
 PulseOximeter pulseOximeter;
 BLEHandler bleHandler;
@@ -12,7 +12,8 @@ float spO2 = -1;
 
 void BLEHandlerCharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
 {
-  Serial.println("onRead callback triggered");
+  if (DEBUG_LEVEL >= 1)
+    Serial.println("onRead callback triggered");
   // Create a buffer to store the data
   uint8_t data[8];
 
@@ -44,7 +45,8 @@ void loop()
 {
   if (!pulseOximeter.isFingerDetected())
   {
-    Serial.println("No finger detected. Please place your finger on the sensor.");
+    if (DEBUG_LEVEL >= 1)
+      Serial.println("No finger detected. Please place your finger on the sensor.");
     pulseOximeter.reset();
     spO2 = -1;
     heartRate = -1;
@@ -68,6 +70,6 @@ void loop()
       Serial.println(heartRate);
     }
   }
-  
+
   delay(50);
 }

@@ -13,7 +13,7 @@
 #define MAX30105_ADC_RANGE 4096   // ADC range (2048, 4096, 8192, 16384)
 
 // Define heart rate calculation parameters
-#define RATE_SIZE 5 // Size of the heart rate circular buffer
+#define RATE_SIZE 20 // Size of the heart rate circular buffer
 
 /**
  * @brief Class for interfacing with the MAX30105 pulse oximeter sensor.
@@ -87,6 +87,7 @@ private:
   int32_t lastHeartRate;     // Last calculated heart rate
   int sampleCount;           // Current sample count
   int ratesCount;            // Current heart rate count
+  bool isFull;               // Flag to indicate if the circular buffer is full
 
   /**
    * @brief Calculates the SpO2 value based on red and IR LED readings.
