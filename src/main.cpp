@@ -45,12 +45,15 @@ void loop()
   if (!pulseOximeter.isFingerDetected())
   {
     Serial.println("No finger detected. Please place your finger on the sensor.");
-    pulseOximeter.lastHeartRate = 0;
+    pulseOximeter.reset();
+    spO2 = -1;
+    heartRate = -1;
     delay(1000);
     return;
   }
+
   pulseOximeter.update();
-  if (!pulseOximeter.sampleCount)
+  if (pulseOximeter.hasNewValue())
   {
     spO2 = pulseOximeter.getSpO2();
     heartRate = pulseOximeter.getHeartRate();
@@ -65,5 +68,6 @@ void loop()
       Serial.println(heartRate);
     }
   }
+  
   delay(50);
 }

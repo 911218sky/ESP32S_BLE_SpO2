@@ -63,16 +63,30 @@ public:
    */
   void update();
 
-  int sampleCount;       // Current sample count
-  int ratesCount;        // Current heart rate count
-  int32_t lastHeartRate; // Last calculated heart rate
+  /**
+   * @brief Resets the sensor and internal buffers.
+   *
+   * This method resets the sensor to its initial state and clears all
+   * internal buffers.
+   */
+  void reset();
+
+  /**
+   * @brief Checks if there are new sensor readings available.
+   *
+   * @return true if there are new sensor readings available, false otherwise.
+   */
+  bool hasNewValue();
+
 private:
-  MAX30105 particleSensor;            // Instance of the MAX30105 sensor object
-  const int numSamples = 50;          // Number of samples to collect for averaging
-  const int averageHeartRateSize = 5; //
-  int32_t redValues[50];              // Buffer for storing red LED readings
-  int32_t irValues[50];               // Buffer for storing IR LED readings
-  int32_t rates[RATE_SIZE] = {0};     // Circular buffer for storing heart rate values
+  const int numSamples = 50; // Number of samples to collect for averaging
+  MAX30105 particleSensor;   // Instance of the MAX30105 sensor object
+  int32_t redValues[50];     // Buffer for storing red LED readings
+  int32_t irValues[50];      // Buffer for storing IR LED readings
+  int32_t rates[RATE_SIZE];  // Circular buffer for storing heart rate values
+  int32_t lastHeartRate;     // Last calculated heart rate
+  int sampleCount;           // Current sample count
+  int ratesCount;            // Current heart rate count
 
   /**
    * @brief Calculates the SpO2 value based on red and IR LED readings.

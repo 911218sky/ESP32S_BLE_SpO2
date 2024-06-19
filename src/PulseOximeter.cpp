@@ -13,6 +13,17 @@ void PulseOximeter::begin()
   Serial.println("Place your index finger on the sensor with steady pressure.");
   particleSensor.setup(MAX30105_POWER_LEVEL, MAX30105_SAMPLE_AVERAGE, MAX30105_LED_MODE,
                        MAX30105_SAMPLE_RATE, MAX30105_PULSE_WIDTH, MAX30105_ADC_RANGE);
+  reset();
+}
+
+void PulseOximeter::reset()
+{
+  memset(redValues, 0, sizeof(redValues));
+  memset(irValues, 0, sizeof(irValues));
+  memset(rates, 0, sizeof(rates));
+  sampleCount = 0;
+  ratesCount = 0;
+  lastHeartRate = 0;
 }
 
 bool PulseOximeter::isFingerDetected()
@@ -25,8 +36,13 @@ void PulseOximeter::update()
   redValues[sampleCount] = particleSensor.getRed();
   irValues[sampleCount] = particleSensor.getIR();
   sampleCount++;
-  if (sampleCount == numSamples)
+  if (sampleCount >= numSamples)
     sampleCount = 0;
+}
+
+bool PulseOximeter::hasNewValue()
+{
+  return sampleCount == 0;
 }
 
 float PulseOximeter::getSpO2()
@@ -71,7 +87,7 @@ float PulseOximeter::calculateSpO2(int32_t redValue, int32_t irValue)
   float ratio = (float)redValue / (float)irValue;
 
   // 3. Estimate SpO2 using an empirical formula
-  float spo2 = 100.0f - 5.0f * (ratio - 0.65f);
+  float spo2 = 100.0f - 5.0f * (ratio - 0.8f);
 
   // 4. Constrain SpO2 to the range of 0% to 100%
   if (spo2 > 100.0f)
@@ -111,14 +127,6 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     return;
   }
 
-  // If less than two peaks are detected, set the heart rate as invalid and return
-  if (peakCount < 2)
-  {
-    *heartRate = 0;
-    *validHeartRate = 0;
-    return;
-  }
-
   // 計算平均峰值間隔
   float avgInterval = (float)sumIntervals / (peakCount - 1);
 
@@ -141,7 +149,8 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     rateCount++;
   }
 
-  if (rateCount) *heartRate /= (rateCount + 1);
+  if (rateCount)
+    *heartRate /= (rateCount + 1);
 
   // If the calculated heart rate is outside a reasonable range, set it as invalid and return
   if (*heartRate < 60 || *heartRate > 300)
