@@ -155,8 +155,7 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     rateCount++;
   }
 
-  if (rateCount)
-    *heartRate /= (rateCount + 1);
+  *heartRate /= (rateCount + 1);
 
   // If the calculated heart rate is outside a reasonable range, set it as invalid and return
   if (*heartRate < 60 || *heartRate > 300)

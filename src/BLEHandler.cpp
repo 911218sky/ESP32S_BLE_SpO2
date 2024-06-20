@@ -2,8 +2,6 @@
 
 BLEHandler::BLEHandler()
 {
-  deviceConnected = false;
-  oldDeviceConnected = false;
 }
 
 void BLEHandler::begin(const std::string &deviceName, const std::string &service_uuid, const std::string &characteristic_uuid)
@@ -58,11 +56,6 @@ void BLEHandler::notify(const std::string &value)
   pCharacteristic->notify();
 }
 
-bool BLEHandler::isDeviceConnected()
-{
-  return deviceConnected;
-}
-
 // --- BLEHandlerCharacteristicCallbacks ---
 
 void BLEHandlerCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
@@ -75,10 +68,10 @@ void BLEHandlerCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacterist
 
 // --- BLEHandlerServerCallbacks ---
 
-void BLEHandlerServerCallbacks::onConnect(BLEServer *pServer)
-{
-  Serial.println("Device is connected");
-}
+// void BLEHandlerServerCallbacks::onConnect(BLEServer *pServer)
+// {
+//   Serial.println("Device is connected");
+// }
 
 // void BLEHandlerServerCallbacks::onDisconnect(BLEServer *pServer)
 // {

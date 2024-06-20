@@ -2,11 +2,12 @@
 #include "BLEHandler.h"
 #include "PulseOximeter.h"
 
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 1
 
 PulseOximeter pulseOximeter;
 BLEHandler bleHandler;
 
+bool deviceConnected = false;
 float heartRate = -1;
 float spO2 = -1;
 
@@ -25,11 +26,18 @@ void BLEHandlerCharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristi
   pCharacteristic->setValue(data, sizeof(data));
 }
 
+void BLEHandlerServerCallbacks::onConnect(BLEServer *pServer)
+{
+  Serial.println("Device is connected");
+  pulseOximeter.particleSensor.wakeUp();
+  deviceConnected = true;
+}
+
 void BLEHandlerServerCallbacks::onDisconnect(BLEServer *pServer)
 {
-  if (DEBUG_LEVEL >= 1)
-    Serial.println("Device is disconnected");
+  Serial.println("Device is disconnected");
   bleHandler.startAdvertising();
+  deviceConnected = false;
 }
 
 void setup()
@@ -43,6 +51,15 @@ void setup()
 
 void loop()
 {
+  if (!deviceConnected)
+  {
+    if (DEBUG_LEVEL >= 1)
+      Serial.println("No device connected. Waiting for connection...");
+    pulseOximeter.particleSensor.shutDown();
+    delay(1000);
+    return;
+  }
+
   if (!pulseOximeter.isFingerDetected())
   {
     if (DEBUG_LEVEL >= 1)

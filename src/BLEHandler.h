@@ -82,17 +82,9 @@ public:
    */
   void notify(const std::string &value);
 
-  /**
-   * @brief Checks if a device is connected.
-   * @return True if a device is connected, false otherwise.
-   */
-  bool isDeviceConnected();
-
 private:
   BLEServer *pServer;                 ///< Pointer to the BLE server.
   BLECharacteristic *pCharacteristic; ///< Pointer to the BLE characteristic.
-  bool deviceConnected;               ///< Flag indicating if a device is connected.
-  bool oldDeviceConnected;            ///< Flag indicating if a device was previously connected.
   std::string receivedValue;          ///< The value received from the BLE characteristic.
 
   // Callback objects

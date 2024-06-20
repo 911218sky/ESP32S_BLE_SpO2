@@ -13,7 +13,7 @@
 #define MAX30105_ADC_RANGE 4096   // ADC range (2048, 4096, 8192, 16384)
 
 // Define heart rate calculation parameters
-#define RATE_SIZE 20 // Size of the heart rate circular buffer
+#define RATE_SIZE 10 // Size of the heart rate circular buffer
 
 /**
  * @brief Class for interfacing with the MAX30105 pulse oximeter sensor.
@@ -78,9 +78,9 @@ public:
    */
   bool hasNewValue();
 
+  MAX30105 particleSensor; // Instance of the MAX30105 sensor object
 private:
   const int numSamples = 50; // Number of samples to collect for averaging
-  MAX30105 particleSensor;   // Instance of the MAX30105 sensor object
   int32_t redValues[50];     // Buffer for storing red LED readings
   int32_t irValues[50];      // Buffer for storing IR LED readings
   int32_t rates[RATE_SIZE];  // Circular buffer for storing heart rate values
