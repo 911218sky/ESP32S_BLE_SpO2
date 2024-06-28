@@ -11,7 +11,7 @@ bool deviceConnected = false;
 float heartRate = -1;
 float spO2 = -1;
 
-int __round(float value)
+inline int __round(float value)
 {
   return static_cast<int>(value >= 0.0f ? value + 0.5f : value - 0.5f);
 }
