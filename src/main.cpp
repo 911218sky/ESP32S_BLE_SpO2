@@ -1,13 +1,17 @@
 #include <stdint.h>
 #include "BLEHandler.h"
 #include "PulseOximeter.h"
+#include "MPU6050Sensor.h"
 
-#define DEBUG_LEVEL 1
+#define DEBUG_LEVEL 0
+#define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define DEVICE_NAME "ESP-32S-001"
 
 PulseOximeter pulseOximeter;
 BLEHandler bleHandler;
+MPU6050Sensor mpu;
 
-bool deviceConnected = false;
 float heartRate = -1;
 float spO2 = -1;
 
@@ -16,7 +20,7 @@ inline int __round(float value)
   return static_cast<int>(value >= 0.0f ? value + 0.5f : value - 0.5f);
 }
 
-void BLEHandlerCharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
+void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
 {
   if (DEBUG_LEVEL >= 1)
     Serial.println("onRead callback triggered");
@@ -35,48 +39,51 @@ void BLEHandlerCharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristi
   pCharacteristic->setValue(data, sizeof(data));
 }
 
-void BLEHandlerServerCallbacks::onConnect(BLEServer *pServer)
+void BLEHandler::onConnect(BLEServer *pServer)
 {
   Serial.println("Device is connected");
-  pulseOximeter.particleSensor.wakeUp();
-  deviceConnected = true;
+  pulseOximeter.wakeUp();
 }
 
-void BLEHandlerServerCallbacks::onDisconnect(BLEServer *pServer)
+void BLEHandler::onDisconnect(BLEServer *pServer)
 {
   Serial.println("Device is disconnected");
   bleHandler.startAdvertising();
-  deviceConnected = false;
+  pulseOximeter.shutDown();
 }
 
 void setup()
 {
   Serial.begin(9600);
+  Wire.begin();
   if (DEBUG_LEVEL >= 1)
     Serial.println("Initializing...");
   pulseOximeter.begin();
-  bleHandler.begin("ESP-32S-001");
+  bleHandler.begin(DEVICE_NAME, SERVICE_UUID, CHARACTERISTIC_UUID);
+  bleHandler.startAdvertising();
+  mpu.begin();
+  pulseOximeter.shutDown();
 }
 
 void loop()
 {
-  if (!deviceConnected)
-  {
-    if (DEBUG_LEVEL >= 1)
-      Serial.println("No device connected. Waiting for connection...");
-    pulseOximeter.particleSensor.shutDown();
-    delay(1000);
-    return;
-  }
+
+  // if (DEBUG_LEVEL >= 1)
+  // {
+  //   mpu.update();
+  //   mpu.printAngles();
+  //   Serial.print("Temperature: ");
+  //   Serial.println(mpu.getTemp());
+  // }
 
   if (!pulseOximeter.isFingerDetected())
   {
-    if (DEBUG_LEVEL >= 1)
-      Serial.println("No finger detected. Please place your finger on the sensor.");
+    // if (DEBUG_LEVEL >= 1)
+    //   Serial.println("No finger detected. Please place your finger on the sensor.");
     pulseOximeter.reset();
     spO2 = -1;
     heartRate = -1;
-    delay(1000);
+    // delay(1000);
     return;
   }
 
@@ -88,12 +95,12 @@ void loop()
     if (DEBUG_LEVEL >= 1)
     {
       Serial.print("Average SpO2:");
-      Serial.println(spO2);
+      Serial.println(__round(spO2));
     }
     if (DEBUG_LEVEL >= 1 && heartRate != -1)
     {
       Serial.print("Heart Rate: ");
-      Serial.println(heartRate);
+      Serial.println(__round(heartRate));
     }
   }
 

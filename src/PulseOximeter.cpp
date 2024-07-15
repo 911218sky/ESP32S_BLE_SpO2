@@ -6,18 +6,20 @@ PulseOximeter::PulseOximeter() : sampleCount(0), lastHeartRate(0), ratesCount(0)
 
 void PulseOximeter::begin()
 {
-  if (!particleSensor.begin(Wire, I2C_SPEED_FAST))
+  if (!MAX30105::begin(Wire, I2C_SPEED_FAST))
   {
     Serial.println("MAX30102 was not found. Please check wiring/power.");
   }
   Serial.println("Place your index finger on the sensor with steady pressure.");
-  particleSensor.setup(MAX30105_POWER_LEVEL, MAX30105_SAMPLE_AVERAGE, MAX30105_LED_MODE,
-                       MAX30105_SAMPLE_RATE, MAX30105_PULSE_WIDTH, MAX30105_ADC_RANGE);
+  MAX30105::setup(MAX30105_POWER_LEVEL, MAX30105_SAMPLE_AVERAGE, MAX30105_LED_MODE,
+                  MAX30105_SAMPLE_RATE, MAX30105_PULSE_WIDTH, MAX30105_ADC_RANGE);
   reset();
 }
 
 void PulseOximeter::reset()
 {
+  if (sampleCount == 0)
+    return;
   memset(redValues, 0, sizeof(redValues));
   memset(irValues, 0, sizeof(irValues));
   memset(rates, 0, sizeof(rates));
@@ -29,13 +31,13 @@ void PulseOximeter::reset()
 
 bool PulseOximeter::isFingerDetected()
 {
-  return particleSensor.getIR() >= 50000;
+  return getIR() >= 50000;
 }
 
 void PulseOximeter::update()
 {
-  redValues[sampleCount] = particleSensor.getRed();
-  irValues[sampleCount] = particleSensor.getIR();
+  redValues[sampleCount] = getRed();
+  irValues[sampleCount] = getIR();
   sampleCount++;
   if (sampleCount >= numSamples)
   {
@@ -140,13 +142,9 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   // 公式: 心率 = (60 * 采樣率) / 平均峰值間隔
   *heartRate = ((60.0f) / (avgInterval * 0.4)) * 2.3;
 
-  // Serial.print("heartRate : ");
-  // Serial.println(*heartRate);
-  // Serial.print("avgInterval : ");
-  // Serial.println(avgInterval * 0.6);
-
   int rateCount = 0;
 
+  // 濾波心率
   for (int i = 0; i < RATE_SIZE; i++)
   {
     if (!rates[i])

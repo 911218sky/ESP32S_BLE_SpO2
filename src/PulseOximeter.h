@@ -21,7 +21,7 @@
  * This class provides methods for initializing the sensor, reading data,
  * and calculating heart rate and SpO2 values.
  */
-class PulseOximeter
+class PulseOximeter : public MAX30105
 {
 public:
   /**
@@ -78,7 +78,6 @@ public:
    */
   bool hasNewValue();
 
-  MAX30105 particleSensor; // Instance of the MAX30105 sensor object
 private:
   const int numSamples = 50; // Number of samples to collect for averaging
   int32_t redValues[50];     // Buffer for storing red LED readings

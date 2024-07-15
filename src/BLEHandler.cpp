@@ -1,79 +1,59 @@
 #include "BLEHandler.h"
+#include <Arduino.h> // 為了使用 Serial
 
-BLEHandler::BLEHandler()
-{
-}
+BLEHandler::BLEHandler() : pServer(nullptr), pCharacteristic(nullptr) {}
 
 void BLEHandler::begin(const std::string &deviceName, const std::string &service_uuid, const std::string &characteristic_uuid)
 {
-  // Initialize BLE device
+  this->service_uuid = service_uuid;
+  this->characteristic_uuid = characteristic_uuid;
+
   BLEDevice::init(deviceName);
-
-  // Create BLE server
   createBLEServer();
-
-  // Create BLE service and characteristic
   createBLEServiceAndCharacteristic(service_uuid, characteristic_uuid);
-
-  // Start advertising
-  startAdvertising();
-}
-
-void BLEHandler::createBLEServer()
-{
-  // Create BLE server
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(&serverCallbacks);
-}
-
-void BLEHandler::createBLEServiceAndCharacteristic(const std::string &service_uuid, const std::string &characteristic_uuid)
-{
-  // Create BLE service
-  BLEService *pService = pServer->createService(service_uuid);
-
-  // Create BLE characteristic
-  pCharacteristic = pService->createCharacteristic(
-      characteristic_uuid,
-      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY);
-
-  // Set characteristic callbacks
-  pCharacteristic->setCallbacks(&characteristicCallbacks);
-
-  // Add characteristic to service
-  pService->start();
+  Serial.println("BLE service initialized successfully");
 }
 
 void BLEHandler::startAdvertising()
 {
-  // Start advertising
-  pServer->getAdvertising()->start();
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(service_uuid);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+  Serial.println("BLE advertising started");
 }
 
-void BLEHandler::notify(const std::string &value)
+void BLEHandler::createBLEServer() {
+    pServer = BLEDevice::createServer();
+    pServer->setCallbacks(this);
+}
+
+void BLEHandler::createBLEServiceAndCharacteristic(const std::string &service_uuid, const std::string &characteristic_uuid)
 {
-  // Send notification
-  pCharacteristic->setValue(value);
-  pCharacteristic->notify();
+  BLEService *pService = pServer->createService(service_uuid);
+  pCharacteristic = pService->createCharacteristic(
+      characteristic_uuid,
+      BLECharacteristic::PROPERTY_READ |
+          BLECharacteristic::PROPERTY_WRITE |
+          BLECharacteristic::PROPERTY_NOTIFY |
+          BLECharacteristic::PROPERTY_INDICATE);
+
+  pCharacteristic->setCallbacks(this);
+  pCharacteristic->addDescriptor(new BLE2902());
+  pService->start();
 }
 
-// --- BLEHandlerCharacteristicCallbacks ---
-
-void BLEHandlerCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
-{
-}
-
-// void BLEHandlerCharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
-// {
+// 實現回調方法（即使是空的實現）
+// void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
+//     Serial.println("Characteristic Read");
 // }
 
-// --- BLEHandlerServerCallbacks ---
-
-// void BLEHandlerServerCallbacks::onConnect(BLEServer *pServer)
-// {
-//   Serial.println("Device is connected");
+// void BLEHandler::onConnect(BLEServer *pServer) {
+//     Serial.println("Client Connected");
 // }
 
-// void BLEHandlerServerCallbacks::onDisconnect(BLEServer *pServer)
-// {
-//   Serial.println("Device is disconnected");
+// void BLEHandler::onDisconnect(BLEServer *pServer) {
+//     Serial.println("Client Disconnected");
 // }
