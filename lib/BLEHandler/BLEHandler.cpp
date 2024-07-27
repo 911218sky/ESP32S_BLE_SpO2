@@ -1,5 +1,5 @@
 #include "BLEHandler.h"
-#include <Arduino.h> // 為了使用 Serial
+#include <Arduino.h> 
 
 BLEHandler::BLEHandler() : pServer(nullptr), pCharacteristic(nullptr) {}
 
@@ -44,16 +44,3 @@ void BLEHandler::createBLEServiceAndCharacteristic(const std::string &service_uu
   pCharacteristic->addDescriptor(new BLE2902());
   pService->start();
 }
-
-// 實現回調方法（即使是空的實現）
-// void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param) {
-//     Serial.println("Characteristic Read");
-// }
-
-// void BLEHandler::onConnect(BLEServer *pServer) {
-//     Serial.println("Client Connected");
-// }
-
-// void BLEHandler::onDisconnect(BLEServer *pServer) {
-//     Serial.println("Client Disconnected");
-// }

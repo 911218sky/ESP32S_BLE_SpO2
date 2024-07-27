@@ -84,19 +84,15 @@ int32_t PulseOximeter::getHeartRate()
 
 float PulseOximeter::calculateSpO2(int32_t redValue, int32_t irValue)
 {
-  // 1. Check for valid input values
   if (redValue <= 0 || irValue <= 0)
   {
     return -1.0f;
   }
 
-  // 2. Calculate the ratio of red to infrared light
   float ratio = (float)redValue / (float)irValue;
 
-  // 3. Estimate SpO2 using an empirical formula
   float spo2 = 100.0f - 5.0f * (ratio - 0.75f);
 
-  // 4. Constrain SpO2 to the range of 0% to 100%
   if (spo2 > 100.0f)
   {
     spo2 = 100.0f;
@@ -109,7 +105,6 @@ float PulseOximeter::calculateSpO2(int32_t redValue, int32_t irValue)
   return spo2;
 }
 
-// Function to calculate heart rate from the given data
 void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_t *heartRate, int8_t *validHeartRate)
 {
   int peakCount = 0;
@@ -135,16 +130,12 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     return;
   }
 
-  // 計算平均峰值間隔
   float avgInterval = (float)sumIntervals / (peakCount - 1);
 
-  // 計算心率 (BPM)
-  // 公式: 心率 = (60 * 采樣率) / 平均峰值間隔
   *heartRate = ((60.0f) / (avgInterval * 0.4)) * 2.3;
 
   int rateCount = 0;
 
-  // 濾波心率
   for (int i = 0; i < RATE_SIZE; i++)
   {
     if (!rates[i])
@@ -155,7 +146,6 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
 
   *heartRate /= (rateCount + 1);
 
-  // If the calculated heart rate is outside a reasonable range, set it as invalid and return
   if (*heartRate < 60 || *heartRate > 300)
   {
     *heartRate = 0;
@@ -166,6 +156,5 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   rates[ratesCount++] = *heartRate;
   ratesCount %= RATE_SIZE;
 
-  // If the heart rate is within a reasonable range, mark it as valid
   *validHeartRate = 1;
 }

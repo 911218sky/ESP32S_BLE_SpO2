@@ -15,27 +15,18 @@ MPU6050Sensor mpu;
 float heartRate = -1;
 float spO2 = -1;
 
-inline int __round(float value)
-{
-  return static_cast<int>(value >= 0.0f ? value + 0.5f : value - 0.5f);
-}
-
 void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
 {
   if (DEBUG_LEVEL >= 1)
     Serial.println("onRead callback triggered");
-  // Create a buffer to store the data
   uint8_t data[8];
 
-  // Round the heart rate and spO2 values
-  int roundedHeartRate = __round(heartRate);
-  int roundedSpO2 = __round(spO2);
+  int roundedHeartRate = std::round(heartRate);
+  int roundedSpO2 = std::round(spO2);
 
-  // Copy the heartRate and spO2 data into the data array using memcpy
   memcpy(data, &roundedHeartRate, sizeof(roundedHeartRate));             // Copy heartRate
   memcpy(data + sizeof(roundedSpO2), &roundedSpO2, sizeof(roundedSpO2)); // Copy spO2
 
-  // Set the data to the characteristic and send it to the client
   pCharacteristic->setValue(data, sizeof(data));
 }
 
@@ -95,12 +86,12 @@ void loop()
     if (DEBUG_LEVEL >= 1)
     {
       Serial.print("Average SpO2:");
-      Serial.println(__round(spO2));
+      Serial.println(std::round(spO2));
     }
     if (DEBUG_LEVEL >= 1 && heartRate != -1)
     {
       Serial.print("Heart Rate: ");
-      Serial.println(__round(heartRate));
+      Serial.println(std::round(heartRate));
     }
   }
 
