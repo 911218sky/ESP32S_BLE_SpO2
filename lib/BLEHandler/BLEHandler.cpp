@@ -1,46 +1,34 @@
 #include "BLEHandler.h"
-#include <Arduino.h> 
 
 BLEHandler::BLEHandler() : pServer(nullptr), pCharacteristic(nullptr) {}
 
-void BLEHandler::begin(const std::string &deviceName, const std::string &service_uuid, const std::string &characteristic_uuid)
-{
-  this->service_uuid = service_uuid;
-  this->characteristic_uuid = characteristic_uuid;
-
-  BLEDevice::init(deviceName);
-  createBLEServer();
-  createBLEServiceAndCharacteristic(service_uuid, characteristic_uuid);
-  Serial.println("BLE service initialized successfully");
-}
-
-void BLEHandler::startAdvertising()
-{
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(service_uuid);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->setMinPreferred(0x06);
-  pAdvertising->setMinPreferred(0x12);
-  BLEDevice::startAdvertising();
-  Serial.println("BLE advertising started");
-}
-
-void BLEHandler::createBLEServer() {
-    pServer = BLEDevice::createServer();
+void BLEHandler::begin(const char *deviceName, const char *service_uuid, const char *characteristic_uuid) {
+    // Initialize the BLE device
+    NimBLEDevice::init(deviceName);
+    
+    // Create a server
+    pServer = NimBLEDevice::createServer();
     pServer->setCallbacks(this);
+
+    // Create a service
+    NimBLEService *pService = pServer->createService(service_uuid);
+    
+    // Create a characteristic
+    pCharacteristic = pService->createCharacteristic(characteristic_uuid, 
+                                    NIMBLE_PROPERTY::READ | 
+                                    NIMBLE_PROPERTY::WRITE);
+    pCharacteristic->setCallbacks(this);
+
+    // Start the service
+    pService->start();
+
+    // Start advertising
+    startAdvertising();
 }
 
-void BLEHandler::createBLEServiceAndCharacteristic(const std::string &service_uuid, const std::string &characteristic_uuid)
-{
-  BLEService *pService = pServer->createService(service_uuid);
-  pCharacteristic = pService->createCharacteristic(
-      characteristic_uuid,
-      BLECharacteristic::PROPERTY_READ |
-          BLECharacteristic::PROPERTY_WRITE |
-          BLECharacteristic::PROPERTY_NOTIFY |
-          BLECharacteristic::PROPERTY_INDICATE);
-
-  pCharacteristic->setCallbacks(this);
-  pCharacteristic->addDescriptor(new BLE2902());
-  pService->start();
+void BLEHandler::startAdvertising() {
+    NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+    pAdvertising->addServiceUUID(pCharacteristic->getService()->getUUID());
+    pAdvertising->start();
+    Serial.println("BLE Advertising Started.");
 }

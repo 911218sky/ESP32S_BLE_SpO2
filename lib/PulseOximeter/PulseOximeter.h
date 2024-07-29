@@ -79,14 +79,14 @@ public:
   bool hasNewValue();
 
 private:
-  const int numSamples = 50; // Number of samples to collect for averaging
-  int32_t redValues[50];     // Buffer for storing red LED readings
-  int32_t irValues[50];      // Buffer for storing IR LED readings
-  int32_t rates[RATE_SIZE];  // Circular buffer for storing heart rate values
-  int32_t lastHeartRate;     // Last calculated heart rate
-  int sampleCount;           // Current sample count
-  int ratesCount;            // Current heart rate count
-  bool isFull;               // Flag to indicate if the circular buffer is full
+  static const int numSamples = 50;  // Number of samples to collect for averaging
+  int32_t redValues[numSamples];     // Buffer for storing red LED readings
+  int32_t irValues[numSamples];      // Buffer for storing IR LED readings
+  int32_t rates[RATE_SIZE];          // Circular buffer for storing heart rate values
+  int32_t lastHeartRate;             // Last calculated heart rate
+  int sampleCount;                   // Current sample count
+  int ratesCount;                    // Current heart rate count
+  bool isFull;                       // Flag to indicate if the circular buffer is full
 
   /**
    * @brief Calculates the SpO2 value based on red and IR LED readings.

@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <math.h>
 
-PulseOximeter::PulseOximeter() : sampleCount(0), lastHeartRate(0), ratesCount(0) {}
+PulseOximeter::PulseOximeter() : sampleCount(0), lastHeartRate(0), ratesCount(0), isFull(false) {}
 
 void PulseOximeter::begin()
 {
@@ -20,9 +20,9 @@ void PulseOximeter::reset()
 {
   if (sampleCount == 0)
     return;
+
   memset(redValues, 0, sizeof(redValues));
   memset(irValues, 0, sizeof(irValues));
-  memset(rates, 0, sizeof(rates));
   sampleCount = 0;
   ratesCount = 0;
   lastHeartRate = 0;
@@ -53,8 +53,7 @@ bool PulseOximeter::hasNewValue()
 
 float PulseOximeter::getSpO2()
 {
-  int32_t totalRed = 0;
-  int32_t totalIR = 0;
+  int32_t totalRed = 0, totalIR = 0;
   int n = isFull ? numSamples : sampleCount;
 
   for (int i = 0; i < n; i++)
@@ -63,10 +62,7 @@ float PulseOximeter::getSpO2()
     totalIR += irValues[i];
   }
 
-  int32_t avgRed = totalRed / n;
-  int32_t avgIR = totalIR / n;
-
-  return calculateSpO2(avgRed, avgIR);
+  return calculateSpO2(totalRed / n, totalIR / n);
 }
 
 int32_t PulseOximeter::getHeartRate()
@@ -74,6 +70,7 @@ int32_t PulseOximeter::getHeartRate()
   int32_t heartRate;
   int8_t validHeartRate;
   calculateHeartRate(irValues, numSamples, &heartRate, &validHeartRate);
+
   if (validHeartRate && (abs(lastHeartRate - heartRate) < 30 || !lastHeartRate))
   {
     lastHeartRate = heartRate;
@@ -85,31 +82,15 @@ int32_t PulseOximeter::getHeartRate()
 float PulseOximeter::calculateSpO2(int32_t redValue, int32_t irValue)
 {
   if (redValue <= 0 || irValue <= 0)
-  {
     return -1.0f;
-  }
 
-  float ratio = (float)redValue / (float)irValue;
-
-  float spo2 = 100.0f - 5.0f * (ratio - 0.75f);
-
-  if (spo2 > 100.0f)
-  {
-    spo2 = 100.0f;
-  }
-  else if (spo2 < 0.0f)
-  {
-    spo2 = 0.0f;
-  }
-
-  return spo2;
+  float ratio = static_cast<float>(redValue) / static_cast<float>(irValue);
+  return constrain(100.0f - 5.0f * (ratio - 0.75f), 0.0f, 100.0f);
 }
 
 void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_t *heartRate, int8_t *validHeartRate)
 {
-  int peakCount = 0;
-  int lastPeakIndex = -1;
-  int sumIntervals = 0;
+  int peakCount = 0, lastPeakIndex = -1, sumIntervals = 0;
   int n = isFull ? numSamples : sampleCount;
 
   for (int i = 1; i < n - 1; i++)
@@ -118,7 +99,9 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     {
       peakCount++;
       if (lastPeakIndex != -1)
+      {
         sumIntervals += (i - lastPeakIndex);
+      }
       lastPeakIndex = i;
     }
   }
@@ -130,22 +113,7 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
     return;
   }
 
-  float avgInterval = (float)sumIntervals / (peakCount - 1);
-
-  *heartRate = ((60.0f) / (avgInterval * 0.4)) * 2.3;
-
-  int rateCount = 0;
-
-  for (int i = 0; i < RATE_SIZE; i++)
-  {
-    if (!rates[i])
-      continue;
-    *heartRate += rates[i];
-    rateCount++;
-  }
-
-  *heartRate /= (rateCount + 1);
-
+  *heartRate = ((60.0f) / ((float)sumIntervals / (peakCount - 1) * 0.4)) * 2.3;
   if (*heartRate < 60 || *heartRate > 300)
   {
     *heartRate = 0;
@@ -154,7 +122,6 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   }
 
   rates[ratesCount++] = *heartRate;
-  ratesCount %= RATE_SIZE;
-
+  ratesCount %= 10; // Size of the rate buffer
   *validHeartRate = 1;
 }

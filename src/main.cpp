@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include <Arduino.h>
+#include <Wire.h>
 #include "BLEHandler.h"
 #include "PulseOximeter.h"
 #include "MPU6050Sensor.h"
@@ -15,7 +16,7 @@ MPU6050Sensor mpu;
 float heartRate = -1;
 float spO2 = -1;
 
-void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_param_t *param)
+void BLEHandler::onRead(NimBLECharacteristic *pCharacteristic)
 {
   if (DEBUG_LEVEL >= 1)
     Serial.println("onRead callback triggered");
@@ -24,19 +25,18 @@ void BLEHandler::onRead(BLECharacteristic *pCharacteristic, esp_ble_gatts_cb_par
   int roundedHeartRate = std::round(heartRate);
   int roundedSpO2 = std::round(spO2);
 
-  memcpy(data, &roundedHeartRate, sizeof(roundedHeartRate));             // Copy heartRate
-  memcpy(data + sizeof(roundedSpO2), &roundedSpO2, sizeof(roundedSpO2)); // Copy spO2
-
+  memcpy(data, &roundedHeartRate, sizeof(roundedHeartRate));           
+  memcpy(data + sizeof(roundedHeartRate), &roundedSpO2, sizeof(roundedSpO2));
   pCharacteristic->setValue(data, sizeof(data));
 }
 
-void BLEHandler::onConnect(BLEServer *pServer)
+void BLEHandler::onConnect(NimBLEServer *pServer)
 {
   Serial.println("Device is connected");
   pulseOximeter.wakeUp();
 }
 
-void BLEHandler::onDisconnect(BLEServer *pServer)
+void BLEHandler::onDisconnect(NimBLEServer *pServer)
 {
   Serial.println("Device is disconnected");
   bleHandler.startAdvertising();
@@ -59,13 +59,13 @@ void setup()
 void loop()
 {
 
-  // if (DEBUG_LEVEL >= 1)
-  // {
-  //   mpu.update();
-  //   mpu.printAngles();
-  //   Serial.print("Temperature: ");
-  //   Serial.println(mpu.getTemp());
-  // }
+  if (DEBUG_LEVEL >= 1)
+  {
+    mpu.update();
+    mpu.printAngles();
+    Serial.print("Temperature: ");
+    Serial.println(mpu.getTemp());
+  }
 
   if (!pulseOximeter.isFingerDetected())
   {
