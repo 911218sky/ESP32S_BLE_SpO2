@@ -114,6 +114,17 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   }
 
   *heartRate = ((60.0f) / ((float)sumIntervals / (peakCount - 1) * 0.4)) * 2.3;
+  int rateCount = 0;
+
+  for (int i = 0; i < RATE_SIZE; i++)
+  {
+    if (!rates[i])
+      continue;
+    *heartRate += rates[i];
+    rateCount++;
+  }
+  *heartRate /= (rateCount + 1);
+
   if (*heartRate < 60 || *heartRate > 300)
   {
     *heartRate = 0;
@@ -122,6 +133,6 @@ void PulseOximeter::calculateHeartRate(int32_t *irValues, int numSamples, int32_
   }
 
   rates[ratesCount++] = *heartRate;
-  ratesCount %= 10; // Size of the rate buffer
+  ratesCount %= RATE_SIZE; // Size of the rate buffer
   *validHeartRate = 1;
 }
