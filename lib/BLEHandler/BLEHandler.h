@@ -18,6 +18,7 @@ public:
 
     // Overriding callbacks
     void onRead(NimBLECharacteristic *pCharacteristic) override;
+    void onWrite(NimBLECharacteristic *pCharacteristic) override;
     void onConnect(NimBLEServer *pServer) override;
     void onDisconnect(NimBLEServer *pServer) override;
 

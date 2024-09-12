@@ -20,7 +20,6 @@ void PulseOximeter::reset()
 {
   if (sampleCount == 0)
     return;
-
   memset(redValues, 0, sizeof(redValues));
   memset(irValues, 0, sizeof(irValues));
   sampleCount = 0;
