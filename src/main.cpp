@@ -72,9 +72,10 @@ void BLEHandler::onRead(NimBLECharacteristic *pCharacteristic)
   int roundedHeartRate = MODES[MAX30105_MODE] ? std::round(heartRate) : -1;
   int roundedSpO2 = MODES[MAX30105_MODE] ? std::round(spO2) : -1;
 
-  x = MODES[MPU_MODE] ? constrain(mpu.getAngleX(), -180, 180) : -1;
-  y = MODES[MPU_MODE] ? constrain(mpu.getAngleY(), -180, 180) : -1;
-  z = MODES[MPU_MODE] ? constrain(mpu.getAngleZ(), -180, 180) : -1;
+  const float PRECISION_FACTOR = 100.0;
+  x = MODES[MPU_MODE] ? constrain(std::round(mpu.getAngleX() * PRECISION_FACTOR) / PRECISION_FACTOR, -180, 180) : -1;
+  y = MODES[MPU_MODE] ? constrain(std::round(mpu.getAngleY() * PRECISION_FACTOR) / PRECISION_FACTOR, -180, 180) : -1;
+  z = MODES[MPU_MODE] ? constrain(std::round(mpu.getAngleZ() * PRECISION_FACTOR) / PRECISION_FACTOR, -180, 180) : -1;
   temperature = MODES[MPU_MODE] ? constrain(mpu.getTemp(), -255, 255) : -1;
 
   // Copy the data into the data array
@@ -127,6 +128,7 @@ void loop()
 
   if (MODES[MPU_MODE])
     mpu.update();
+
   if (MODES[MAX30105_MODE])
     pulseOximeter.update();
 

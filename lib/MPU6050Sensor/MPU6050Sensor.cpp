@@ -1,130 +1,135 @@
 #include "MPU6050Sensor.h"
 
+/**
+ * @brief Constructor for the MPU6050Sensor class.
+ * Initializes member variables to default values.
+ */
 MPU6050Sensor::MPU6050Sensor() : MPU6050(Wire)
 {
-    angleX = 0;
-    angleY = 0;
-    angleZ = 0;
-    gyroXoffset = 0;
-    gyroYoffset = 0;
-    gyroZoffset = 0;
-    previousTime = 0;
-    smoothAngleX = 0;
-    smoothAngleY = 0;
-    smoothAngleZ = 0;
-    lastAccX = 0;
-    lastAccY = 0;
-    lastAccZ = 0;
+    smoothAngleX = 0.0f;
+    smoothAngleY = 0.0f;
+    smoothAngleZ = 0.0f;
+    previousAngleX = 0.0f;
+    previousAngleY = 0.0f;
+    previousAngleZ = 0.0f;
+    gyroOffsetX = 0.0f;
+    gyroOffsetY = 0.0f;
+    gyroOffsetZ = 0.0f;
+    lastUpdateTime = 0;
 }
 
-void MPU6050Sensor::begin()
-{
-    MPU6050::begin();
-    calibrateGyro();
-    previousTime = micros();
+/**
+ * @brief Initializes the MPU6050 sensor and calibrates the gyroscope.
+ *
+ * This function must be called before using the sensor to ensure it is 
+ * ready for measurements.
+ */
+void MPU6050Sensor::begin() {
+    Wire.begin();
+    MPU6050::begin(); // Initialize MPU6050_tockn library
+    MPU6050::calcGyroOffsets(true); // Calibrate gyroscope
+    // MPU6050::calcAccelOffsets(); // Uncomment if accelerometer calibration is needed
+    lastUpdateTime = millis();
 }
 
-void MPU6050Sensor::update()
-{
-    MPU6050::update();
-    unsigned long currentTime = micros();
-    float dt = (currentTime - previousTime) / 1000000.0;
-    previousTime = currentTime;
-    calculateAngles(dt);
+/**
+ * @brief Updates the sensor readings and computes the current angles.
+ *
+ * This function should be called regularly to keep the angle measurements updated.
+ */
+void MPU6050Sensor::update() {
+    MPU6050::update(); // Explicitly call base class update method
+
+    unsigned long currentTime = millis();
+    float dt = (currentTime - lastUpdateTime) / 1000.0f; // Delta time in seconds
+    lastUpdateTime = currentTime;
+
+    // Get gyroscope data (degrees per second)
+    float gyroRateX = this->getGyroX();
+    float gyroRateY = this->getGyroY();
+    float gyroRateZ = this->getGyroZ();
+
+    // Apply calibration offsets
+    gyroRateX -= gyroOffsetX;
+    gyroRateY -= gyroOffsetY;
+    gyroRateZ -= gyroOffsetZ;
+
+    // Integrate gyroscope data to get angles
+    float gyroAngleX = previousAngleX + gyroRateX * dt;
+    float gyroAngleY = previousAngleY + gyroRateY * dt;
+    float gyroAngleZ = previousAngleZ + gyroRateZ * dt;
+
+    // Get accelerometer angles (X and Y axes only)
+    float accelAngleX = this->getAccAngleX();
+    float accelAngleY = this->getAccAngleY();
+
+    // Apply complementary filter
+    smoothAngleX = alpha * gyroAngleX + (1.0f - alpha) * accelAngleX;
+    smoothAngleY = alpha * gyroAngleY + (1.0f - alpha) * accelAngleY;
+    // Z axis uses gyroscope data only
+    smoothAngleZ = gyroAngleZ;
+
+    // Update previous angles
+    previousAngleX = smoothAngleX;
+    previousAngleY = smoothAngleY;
+    previousAngleZ = smoothAngleZ;
 }
 
-float MPU6050Sensor::getSmoothAngleX()
-{
+/**
+ * @brief Retrieves the smoothed angle around the X-axis.
+ * @return The smoothed angle in degrees.
+ */
+float MPU6050Sensor::getSmoothAngleX() {
     return smoothAngleX;
 }
 
-float MPU6050Sensor::getSmoothAngleY()
-{
+/**
+ * @brief Retrieves the smoothed angle around the Y-axis.
+ * @return The smoothed angle in degrees.
+ */
+float MPU6050Sensor::getSmoothAngleY() {
     return smoothAngleY;
 }
 
-float MPU6050Sensor::getSmoothAngleZ()
-{
+/**
+ * @brief Retrieves the smoothed angle around the Z-axis.
+ * @return The smoothed angle in degrees.
+ */
+float MPU6050Sensor::getSmoothAngleZ() {
     return smoothAngleZ;
 }
 
-void MPU6050Sensor::printAngles()
-{
-    Serial.print("AngleX: ");
+/**
+ * @brief Prints the current smoothed angles to the Serial monitor.
+ *
+ * This function is useful for debugging purposes.
+ */
+void MPU6050Sensor::printAngles() {
+    Serial.print("Angle X: ");
     Serial.print(smoothAngleX);
-    Serial.print("\tAngleY: ");
+    Serial.print(" | Angle Y: ");
     Serial.print(smoothAngleY);
-    Serial.print("\tAngleZ: ");
+    Serial.print(" | Angle Z: ");
     Serial.println(smoothAngleZ);
 }
 
-void MPU6050Sensor::reset()
-{
-    angleX = 0;
-    angleY = 0;
-    angleZ = 0;
-    smoothAngleX = 0;
-    smoothAngleY = 0;
-    smoothAngleZ = 0;
-    lastAccX = 0;
-    lastAccY = 0;
-    lastAccZ = 0;
-    previousTime = micros();
-}
+/**
+ * @brief Resets the angle measurements and calibration offsets.
+ *
+ * This function sets all angles and offsets back to zero.
+ */
+void MPU6050Sensor::reset() {
+    smoothAngleX = 0.0f;
+    smoothAngleY = 0.0f;
+    smoothAngleZ = 0.0f;
 
-void MPU6050Sensor::calibrateGyro()
-{
-    float sumX = 0, sumY = 0, sumZ = 0;
+    previousAngleX = 0.0f;
+    previousAngleY = 0.0f;
+    previousAngleZ = 0.0f;
 
-    for (int i = 0; i < CALIBRATION_SAMPLES; i++)
-    {
-        MPU6050::update();
-        sumX += getGyroX();
-        sumY += getGyroY();
-        sumZ += getGyroZ();
-        delay(1);
-    }
+    gyroOffsetX = 0.0f;
+    gyroOffsetY = 0.0f;
+    gyroOffsetZ = 0.0f;
 
-    gyroXoffset = sumX / CALIBRATION_SAMPLES;
-    gyroYoffset = sumY / CALIBRATION_SAMPLES;
-    gyroZoffset = sumZ / CALIBRATION_SAMPLES;
-}
-
-float MPU6050Sensor::getFilterAlpha(float accMagnitude)
-{
-    float alpha = ALPHA_START + (ALPHA_MIN - ALPHA_START) * (accMagnitude - 1) / MOTION_THRESHOLD;
-    return constrain(alpha, ALPHA_START, ALPHA_MIN);
-}
-
-void MPU6050Sensor::calculateAngles(float dt)
-{
-    float accX = getAccX();
-    float accY = getAccY();
-    float accZ = getAccZ();
-    float gyroX = getGyroX() - gyroXoffset;
-    float gyroY = getGyroY() - gyroYoffset;
-    float gyroZ = getGyroZ() - gyroZoffset;
-
-    // Calculate angles from accelerometer data
-    float accelAngleX = atan2(accY, sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG;
-    float accelAngleY = atan2(-accX, sqrt(accY * accY + accZ * accZ)) * RAD_TO_DEG;
-
-    // Integrate gyro data
-    angleX += gyroX * dt;
-    angleY += gyroY * dt;
-    angleZ += gyroZ * dt;
-
-    // Calculate acceleration magnitude for adaptive filtering
-    float accMagnitude = sqrt(accX * accX + accY * accY + accZ * accZ);
-    float alpha = getFilterAlpha(accMagnitude);
-
-    // Complementary filter
-    smoothAngleX = alpha * (smoothAngleX + gyroX * dt) + (1 - alpha) * accelAngleX;
-    smoothAngleY = alpha * (smoothAngleY + gyroY * dt) + (1 - alpha) * accelAngleY;
-    smoothAngleZ = angleZ; // We don't have a reference for Z angle from accelerometer
-
-    // Update last acceleration values
-    lastAccX = accX;
-    lastAccY = accY;
-    lastAccZ = accZ;
+    MPU6050::calcGyroOffsets(true);
 }

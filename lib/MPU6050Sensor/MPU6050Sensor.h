@@ -68,40 +68,26 @@ public:
     void reset();
 
 private:
-    /**
-     * @brief Calibrates the gyroscope by sampling for a fixed number of samples.
-     *
-     * This function computes the average offset for the gyro measurements.
-     */
-    void calibrateGyro();
+    // Smoothed angles
+    float smoothAngleX;
+    float smoothAngleY;
+    float smoothAngleZ;
 
-    /**
-     * @brief Calculates the filter alpha value based on acceleration magnitude.
-     *
-     * @param accMagnitude The magnitude of acceleration measured by the accelerometer.
-     * @return The calculated alpha value, constrained between ALPHA_START and ALPHA_MIN.
-     */
-    float getFilterAlpha(float accMagnitude);
-    
-    /**
-     * @brief Computes the angles based on gyro and accelerometer readings.
-     *
-     * @param dt The time difference in seconds since the last update.
-     */
-    void calculateAngles(float dt);
+    // Previous angles for complementary filter
+    float previousAngleX;
+    float previousAngleY;
+    float previousAngleZ;
 
-    // Member variables to store angle values and offsets
-    float angleX, angleY, angleZ;
-    float gyroXoffset, gyroYoffset, gyroZoffset;
-    unsigned long previousTime;
-    float smoothAngleX, smoothAngleY, smoothAngleZ;
-    float lastAccX, lastAccY, lastAccZ;
+    // Calibration offsets
+    float gyroOffsetX;
+    float gyroOffsetY;
+    float gyroOffsetZ;
 
-    // Constants for calibration and filtering
-    static const int CALIBRATION_SAMPLES = 1000;  ///< Number of samples for gyro calibration.
-    static constexpr float ALPHA_START = 0.8f;     ///< Starting alpha value for filtering.
-    static constexpr float ALPHA_MIN = 0.1f;       ///< Minimum alpha value for filtering.
-    static constexpr float MOTION_THRESHOLD = 0.1f; ///< Threshold for detecting motion.
+    // Complementary filter coefficient (0 < alpha < 1)
+    const float alpha = 0.98;
+
+    // Time tracking
+    unsigned long lastUpdateTime;
 };
 
 #endif // MPU6050SENSOR_H
